@@ -1,7 +1,6 @@
 'use client';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, Line } from '@react-three/drei';
-import { useRef, useMemo, useLayoutEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useRef, useMemo, useLayoutEffect, useEffect } from 'react';
 import * as THREE from 'three';
 
 export function RuneRing({ radius, rotation = [0, 0, 0] }: { radius: number; rotation?: [number, number, number] }) {
@@ -25,38 +24,65 @@ export function RuneRing({ radius, rotation = [0, 0, 0] }: { radius: number; rot
     <instancedMesh ref={ticks} args={[undefined, undefined, 48]}><boxGeometry args={[1, 1, 1]} /><meshBasicMaterial color="#b3a078" /></instancedMesh>
   </group>;
 }
-export function FloatingParticles({ reduced }: { reduced: boolean }) {
-  const ref = useRef<THREE.Points>(null);
-  const positions = useMemo(() => new Float32Array(Array.from({ length: 240 }, (_, i) => Math.sin(i * 127.1 + 41.7) * 4.5)), []);
-  useFrame((_, delta) => { if (ref.current && !reduced) ref.current.rotation.y += delta * 0.012; });
-  return <points ref={ref}><bufferGeometry><bufferAttribute attach="attributes-position" args={[positions, 3]} /></bufferGeometry><pointsMaterial size={0.013} color="#c3d2cf" transparent opacity={0.5} sizeAttenuation depthWrite={false} /></points>;
-}
 export function MagicalLights() {
-  return <><ambientLight intensity={0.6} /><directionalLight position={[3, 5, 4]} color="#d9c596" intensity={3} /><pointLight position={[-2, 1, 2]} color="#91c8db" intensity={9} /><pointLight position={[0, -1, 0]} color="#75b0bc" intensity={2} /></>;
+  return <><ambientLight intensity={0.9}/><directionalLight position={[-3, 5, 5]} color="#f5dfb0" intensity={3}/><pointLight position={[3, -1, 3]} color="#bbaa77" intensity={5}/></>;
+}
+function CompassNeedle() {
+  const shape = useMemo(() => {
+    const triangle = new THREE.Shape();
+    triangle.moveTo(0, 1.22); triangle.lineTo(-0.2, 0); triangle.lineTo(0.2, 0); triangle.closePath();
+    return triangle;
+  }, []);
+  return <group position={[0, 0, 0.22]}>
+    <mesh><extrudeGeometry args={[shape, { depth: 0.035, bevelEnabled: false }]}/><meshStandardMaterial color="#b98650" metalness={0.75} roughness={0.3}/></mesh>
+    <mesh rotation={[0, 0, Math.PI]}><extrudeGeometry args={[shape, { depth: 0.035, bevelEnabled: false }]}/><meshStandardMaterial color="#c8c1a0" metalness={0.6} roughness={0.35}/></mesh>
+    <mesh position={[0,0,0.07]}><sphereGeometry args={[0.115,12,8]}/><meshStandardMaterial color="#d2ad68" metalness={0.8} roughness={0.2}/></mesh>
+  </group>;
 }
 function Artifact({ reduced }: { reduced: boolean }) {
   const group = useRef<THREE.Group>(null);
-  const crystal = useRef<THREE.Mesh>(null);
-  useFrame(({ pointer, clock }, delta) => {
+  const needle = useRef<THREE.Group>(null);
+  const elapsed = useRef(0);
+  const { gl } = useThree();
+  const pointer = useRef({x:0,y:0});
+  useEffect(() => {
+    const move = (event: PointerEvent) => {
+      if (event.pointerType === 'touch') return;
+      const bounds = gl.domElement.closest('.artifact-display')?.getBoundingClientRect();
+      if (!bounds || event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) { reset(); return; }
+      pointer.current = {x:THREE.MathUtils.clamp((event.clientX-bounds.left)/bounds.width*2-1,-1,1),y:THREE.MathUtils.clamp(1-(event.clientY-bounds.top)/bounds.height*2,-1,1)};
+    };
+    const reset = () => { pointer.current = {x:0,y:0}; };
+    window.addEventListener('pointermove', move, {passive:true});
+    window.addEventListener('blur', reset);
+    document.addEventListener('pointerleave', reset);
+    return () => { window.removeEventListener('pointermove',move); window.removeEventListener('blur',reset); document.removeEventListener('pointerleave',reset); };
+  }, [gl]);
+  useFrame((_, delta) => {
     if (reduced) return;
-    if (group.current) { group.current.rotation.y = THREE.MathUtils.damp(group.current.rotation.y, pointer.x * 0.17 + Math.sin(clock.elapsedTime * 0.09) * 0.15, 2, delta); group.current.rotation.x = THREE.MathUtils.damp(group.current.rotation.x, pointer.y * 0.1, 2, delta); }
-    if (crystal.current) crystal.current.rotation.y += delta * 0.1;
+    const step = Math.min(delta, 0.04);
+    elapsed.current += step;
+    if (group.current) {
+      group.current.rotation.y = THREE.MathUtils.damp(group.current.rotation.y, -0.25 + pointer.current.x * 0.6, 3.5, step);
+      group.current.rotation.x = THREE.MathUtils.damp(group.current.rotation.x, 0.25 + pointer.current.y * 0.45, 3.5, step);
+      group.current.rotation.z = THREE.MathUtils.damp(group.current.rotation.z, -0.2 + pointer.current.x * 0.4 + Math.sin(elapsed.current * 0.3) * 0.08, 3.5, step);
+      group.current.position.y = Math.sin(elapsed.current * 0.7) * 0.045;
+    }
+    if (needle.current) needle.current.rotation.z = THREE.MathUtils.damp(needle.current.rotation.z, Math.sin(elapsed.current * 0.3) * 0.08 + 0.35 + pointer.current.x * 2.6 + pointer.current.y * 0.65, 3, step);
   });
-  return <group ref={group} rotation={[0, 0, -0.12]}>
-    <RuneRing radius={1.7} rotation={[0.4, 0.18, 0]} />
-    <RuneRing radius={1.47} rotation={[1.1, 0.35, 0.6]} />
-    <RuneRing radius={1.48} rotation={[0.35, 1.05, -0.4]} />
-    <RuneRing radius={1.04} rotation={[Math.PI / 2, 0.2, 0]} />
-    <mesh ref={crystal} scale={[0.67, 1.16, 0.67]} rotation={[0, 0.4, 0]}><octahedronGeometry args={[1, 0]} /><meshPhysicalMaterial color="#92bdc9" metalness={0.48} roughness={0.19} transparent opacity={0.9} emissive="#365f70" emissiveIntensity={0.6} clearcoat={1} flatShading /></mesh>
-    <mesh scale={[0.69, 1.18, 0.69]} rotation={[0, 0.4, 0]}><octahedronGeometry args={[1, 0]} /><meshBasicMaterial color="#afdbe7" wireframe transparent opacity={0.22} /></mesh>
-    <Line points={[[0, 2, 0], [0, 1.45, 0]]} color="#9e8659" lineWidth={1} />
-    <Line points={[[0, -1.4, 0], [0, -2.05, 0]]} color="#9e8659" lineWidth={1} />
-    {[2, -2.05].map(y => <mesh key={y} position={[0, y, 0]}><octahedronGeometry args={[0.07]} /><meshStandardMaterial color="#d1b77e" metalness={0.8} roughness={0.3} /></mesh>)}
+  return <group ref={group} rotation={[0.25,-0.25,-0.2]}>
+    <mesh rotation={[Math.PI / 2,0,0]}><cylinderGeometry args={[1.65,1.65,0.18,64]}/><meshStandardMaterial color="#987341" metalness={0.8} roughness={0.38}/></mesh>
+    <mesh position={[0,0,0.101]}><circleGeometry args={[1.51,64]}/><meshStandardMaterial color="#272b20" roughness={0.8}/></mesh>
+    <group position={[0,0,0.14]}><RuneRing radius={1.58}/><RuneRing radius={1.34}/></group>
+    <mesh position={[0,0,0.115]}><ringGeometry args={[1.13,1.14,64]}/><meshBasicMaterial color="#817854"/></mesh>
+    {Array.from({length:8},(_,i)=><group key={i} rotation={[0,0,i*Math.PI/4]} position={[0,0,0.13]}><mesh position={[0,0.63,0]} scale={[0.12,i%2===0?0.65:0.44,0.025]}><octahedronGeometry args={[1,0]}/><meshStandardMaterial color={i%2===0?'#8f8762':'#5a5f47'} roughness={0.7}/></mesh></group>)}
+    <group ref={needle}><CompassNeedle/></group>
+    <mesh position={[0,1.91,0]}><torusGeometry args={[0.21,0.055,8,32]}/><meshStandardMaterial color="#b38a4c" metalness={0.8} roughness={0.3}/></mesh>
   </group>;
 }
 export function SceneEnvironment({ reduced }: { reduced: boolean }) {
-  return <><MagicalLights /><FloatingParticles reduced={reduced} /><Float speed={reduced ? 0 : 0.8} rotationIntensity={reduced ? 0 : 0.08} floatIntensity={reduced ? 0 : 0.22}><Artifact reduced={reduced} /></Float></>;
+  return <><MagicalLights/><Artifact reduced={reduced}/></>;
 }
 export default function HeroArtifact({ reduced, active }: { reduced: boolean; active: boolean }) {
-  return <Canvas camera={{ position: [0, 0, 6], fov: 44 }} dpr={[1, 1.5]} frameloop={reduced || !active ? 'demand' : 'always'} gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }} aria-hidden="true"><SceneEnvironment reduced={reduced || !active} /></Canvas>;
+  return <Canvas camera={{position:[0,0,6],fov:44}} dpr={[1,1.5]} frameloop={reduced||!active?'demand':'always'} gl={{antialias:true,alpha:true,powerPreference:'low-power'}} aria-hidden="true"><SceneEnvironment reduced={reduced||!active}/></Canvas>;
 }
