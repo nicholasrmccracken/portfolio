@@ -6,8 +6,8 @@ import { createPortal } from 'react-dom';
 const landmarks = [
   {id:'experience', name:'Experience', subtitle:'The traveled road', x:190, y:166},
   {id:'projects', name:'Projects', subtitle:'The workshop', x:363, y:218},
-  {id:'skills', name:'Skills', subtitle:'The toolkit', x:191, y:293},
-  {id:'education', name:'Education', subtitle:'The academy', x:181, y:403},
+  {id:'education', name:'Education', subtitle:'The academy', x:191, y:293},
+  {id:'skills', name:'Skills', subtitle:'The toolkit', x:181, y:403},
   {id:'contact', name:'Contact', subtitle:'The next expedition', x:363, y:300},
 ];
 export default function MapNavigation() {

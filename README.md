@@ -17,7 +17,7 @@ All profile links, experience, project descriptions, skills, and degrees live in
 
 - The Resume button links to `public/Nicholas_McCracken_resume.pdf` through `/Nicholas_McCracken_resume.pdf`. If you rename the file, update `profile.resume` in `lib/portfolio.ts`.
 - Use each project's `github` field only for direct repository links. Do not add GitHub profile links.
-- A project's optional `report` URL displays a report link instead of a repository link.
+- All six featured projects link directly to GitHub; optional highlights and small icons keep cards compact.
 - Project dates are intentionally omitted; experience and education retain their dates.
 - Visual styles: `app/globals.css`.
 - Procedural 3D components: `components/HeroArtifact.tsx`.
@@ -33,9 +33,4 @@ The cartographic SVG illustrations are local procedural artwork with coastlines,
 
 ## Interactive atlas
 
-The five hero-map landmarks are accessible anchor links with cancellable animated scrolling and destination focus. Reduced motion uses an immediate jump. The fine-pointer cursor trail is capped at 12 points, fades after 650 ms, and stops rendering when idle. The compass uses damped pointer input and a paused local animation clock to avoid jumps after scrolling back into view. The map route is continuous and uses a steady hover highlight without looping dash animations. Project banners use aligned SVG workflow diagrams for the capstones and local photographs for the marine classifier and airport robot.
-
-## Project image sources
-
-- Marine classifier: [NOAA Ocean Exploration, 2021 ROV Shakedown](https://oceanexplorer.noaa.gov/multimedia/okeanos-explorations-ex2103-gallery-media-sea-cucumber/). The seafloor image illustrates the project subject; it is not presented as a competition dataset sample.
-- Airport robot: photograph from the [project repository](https://github.com/nicholasrmccracken/airport-task-robot).
+The five hero-map landmarks are accessible anchor links with cancellable animated scrolling and destination focus. Reduced motion uses an immediate jump. The fine-pointer cursor trail is capped at 12 points, fades after 650 ms, and stops rendering when idle. The compass uses damped pointer input and a paused local animation clock to avoid jumps after scrolling back into view. The map route is continuous and uses a steady hover highlight without looping dash animations. Project cards retain the field-guide borders, artifact labels, and subtle hover effects, with compact icons for the six featured projects.
